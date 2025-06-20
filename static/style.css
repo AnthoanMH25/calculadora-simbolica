@@ -196,3 +196,26 @@ select:focus {
     padding: 8px;
   }
 }
+.accordion-button {
+  font-weight: bold;
+  background-color: #222 !important;
+  color: #00e6e6 !important;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+}
+
+.accordion-item {
+  border: 1px solid #00e6e6;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.accordion-body {
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 0 0 10px 10px;
+  color: #fff;
+}
+
