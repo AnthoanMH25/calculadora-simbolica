@@ -36,23 +36,88 @@ def corregir_multiplicacion_implicita(expr_str: str) -> str:
 
 def generar_pasos(expr, operacion, punto_limite=None):
     pasos = []
+
+    def explicar_derivacion(expr):
+        partes = expr.as_ordered_terms() if expr.is_Add else [expr]
+        derivada_total = 0
+        for i, termino in enumerate(partes, 1):
+            derivado = sp.diff(termino, x)
+            regla = ""
+            if termino.is_Pow:
+                regla = "Regla de la potencia"
+            elif termino.is_Mul:
+                regla = "Regla del producto"
+            elif termino.is_Function:
+                if termino.has(sp.sin):
+                    regla = "Regla de la derivada del seno"
+                elif termino.has(sp.cos):
+                    regla = "Regla de la derivada del coseno"
+                elif termino.has(sp.exp):
+                    regla = "Regla de la exponencial"
+                elif termino.has(sp.log):
+                    regla = "Regla del logaritmo natural"
+                else:
+                    regla = "Regla general de funciones"
+            else:
+                regla = "Regla de la derivada constante o lineal"
+
+            pasos.append(f"Paso {i}: Derivamos \\({sp.latex(termino)}\\) usando **{regla}**:")
+            pasos.append(f"\\[\\frac{{d}}{{dx}} {sp.latex(termino)} = {sp.latex(derivado)}\\]")
+            derivada_total += derivado
+
+        pasos.append("Sumamos todas las derivadas parciales:")
+        pasos.append(f"\\[f'(x) = {sp.latex(derivada_total)}\\]")
+        return derivada_total
+
     if operacion == "derivar":
-        derivada = sp.diff(expr, x)
+        pasos.append("Paso 0: Identificamos la función a derivar:")
         pasos.append(f"\\[f(x) = {sp.latex(expr)}\\]")
-        pasos.append(f"\\[f'(x) = {sp.latex(derivada)}\\]")
-        return derivada, pasos
+        resultado = explicar_derivacion(expr)
+        pasos.append("Paso final: Esta es la derivada simplificada de la función original.")
+        return resultado, pasos
+
     elif operacion == "integrar":
         integral = sp.integrate(expr, x)
-        pasos.append(f"\\[\\int f(x)\\,dx = \\int {sp.latex(expr)}\\,dx = {sp.latex(integral)} + C\\]")
+        pasos.append("Paso 1: Identificamos la función a integrar:")
+        pasos.append(f"\\[f(x) = {sp.latex(expr)}\\]")
+
+        if expr.has(sp.sin):
+            regla = "Regla de la integral del seno: \\(\\int \\sin(x)dx = -\\cos(x) + C\\)"
+        elif expr.has(sp.cos):
+            regla = "Regla de la integral del coseno: \\(\\int \\cos(x)dx = \\sin(x) + C\\)"
+        elif expr.has(sp.exp):
+            regla = "Regla de la exponencial: \\(\\int e^x dx = e^x + C\\)"
+        elif expr.has(sp.log):
+            regla = "Integral del logaritmo: \\(\\int \\log(x) dx = x\\log(x) - x + C\\)"
+        else:
+            regla = "Se aplica la regla de potencias o lineales según corresponda."
+
+        pasos.append(f"Paso 2: Usamos la regla correspondiente: {regla}")
+        pasos.append(f"Paso 3: Resultado de la integral:")
+        pasos.append(f"\\[\\int f(x)dx = {sp.latex(integral)} + C\\]")
         return integral, pasos
+
     elif operacion == "limite":
         try:
             punto = sp.sympify(punto_limite) if punto_limite else 0
         except Exception:
             punto = 0
         limite = sp.limit(expr, x, punto)
-        pasos.append(f"\\[\\lim_{{x \\to {sp.latex(punto)}}} {sp.latex(expr)} = {sp.latex(limite)}\\]")
+        pasos.append(f"Paso 1: Queremos calcular el siguiente límite:")
+        pasos.append(f"\\[\\lim_{{x \\to {sp.latex(punto)}}} {sp.latex(expr)}\\]")
+
+        if expr.has(sp.sin) or expr.has(sp.cos):
+            pasos.append("Paso 2: Se detecta función trigonométrica. Verificamos continuidad.")
+        elif expr.has(sp.exp):
+            pasos.append("Paso 2: Se detecta función exponencial, la cual es continua.")
+        elif expr.has(sp.log):
+            pasos.append("Paso 2: Se detecta logaritmo. Aseguramos que el argumento sea positivo.")
+
+        pasos.append("Paso 3: Evaluamos directamente (si es posible):")
+        pasos.append(f"\\[\\lim_{{x \\to {sp.latex(punto)}}} = {sp.latex(limite)}\\]")
+        pasos.append("Paso final: Este es el valor límite de la función.")
         return limite, pasos
+
     return None, ["Operación no válida."]
 
 
