@@ -107,13 +107,27 @@
     {% endif %}
 
     {% if pasos %}
-    <section class="mt-4" aria-label="Pasos de cálculo">
-      <h4 class="text-info">Pasos:</h4>
-      {% for paso in pasos %}
-      <p class="mathjax fs-6 mb-1">{{ paso | safe }}</p>
-      {% endfor %}
-    </section>
-    {% endif %}
+<section class="mt-4" aria-label="Pasos de cálculo">
+  <h4 class="text-info">🧠 Explicación paso a paso:</h4>
+  <div class="accordion accordion-flush" id="pasosAccordion">
+    {% for paso in pasos %}
+    <div class="accordion-item bg-dark border-info text-light">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed bg-secondary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#paso{{ loop.index }}" aria-expanded="false">
+          Paso {{ loop.index }}
+        </button>
+      </h2>
+      <div id="paso{{ loop.index }}" class="accordion-collapse collapse">
+        <div class="accordion-body mathjax fs-6">
+          {{ paso | safe }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 
     {% if grafico %}
     <section class="mt-5" aria-label="Gráfica de la función">
