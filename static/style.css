@@ -1,92 +1,198 @@
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #eaf4fc;
-  margin: 0;
-  padding: 0;
+/* === ROOT: Variables CSS para modo claro/oscuro === */
+:root {
+  --bg-dark: #121212;
+  --bg-card: #1e1e1e;
+  --bg-input: #262626;
+  --text-main: #f0f0f0;
+  --text-muted: #aaa;
+  --accent: #00e6e6;
+  --accent-hover: #00c3c3;
+  --error: #e60000;
+  --border: #444;
+  --transition: 0.3s ease;
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.container {
-  max-width: 900px;
-  margin: auto;
-  padding: 20px;
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-dark: #ffffff;
+    --bg-card: #f0f0f0;
+    --bg-input: #ffffff;
+    --text-main: #1a1a1a;
+    --text-muted: #555;
+    --accent: #007bff;
+    --accent-hover: #0056b3;
+    --border: #ccc;
+  }
+}
+
+/* === BASE === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  line-height: 1.6;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+/* === TITULOS === */
+h1, h3, h4 {
+  color: var(--accent);
   text-align: center;
 }
 
-textarea {
-  width: 100%;
-  height: 60px;
-  font-size: 18px;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  resize: none;
+/* === TARJETA / FORMULARIO === */
+.card {
+  background-color: var(--bg-card);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.05);
+  color: var(--text-main);
+  transition: box-shadow var(--transition);
 }
 
+/* === INPUTS Y SELECTS === */
+input[type="text"],
+select,
+.form-control,
+.form-select {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 10px;
+  font-size: 1rem;
+  transition: border var(--transition), box-shadow var(--transition);
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 230, 230, 0.2);
+  outline: none;
+}
+
+/* === BOTONES DE SIMBOLOS === */
 .calculator {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 10px;
-  margin-bottom: 20px;
+  margin-top: 10px;
 }
 
-.calculator button {
-  padding: 10px;
-  font-size: 16px;
-  border: none;
+.btn-simbolo {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 10px 12px;
+  font-size: 1.1rem;
   border-radius: 8px;
-  background: #007bff;
-  color: white;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background var(--transition), color var(--transition), transform 0.2s;
 }
 
-.calculator button:hover {
-  background: #0056b3;
+.btn-simbolo:hover,
+.btn-simbolo:focus {
+  background: var(--accent);
+  color: var(--bg-dark);
+  border-color: var(--accent);
+  transform: scale(1.05);
 }
 
-select, button[type="submit"], input[type="text"] {
-  padding: 10px 20px;
-  font-size: 16px;
-  margin: 10px 5px;
+/* === BOTÓN CALCULAR === */
+.btn-primary {
+  background-color: var(--accent);
+  color: var(--bg-dark);
+  font-weight: bold;
+  border-radius: 10px;
+  transition: background-color var(--transition), transform 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* === MENSAJES Y ALERTAS === */
+.alert {
   border-radius: 8px;
-  border: 1px solid #ccc;
+  font-size: 1rem;
 }
 
-input[type="text"] {
-  width: 200px;
-  font-size: 16px;
+.alert-danger {
+  border-left: 4px solid var(--error);
+  background: rgba(230, 0, 0, 0.1);
+  color: #ff7777;
 }
 
-.resultado {
-  background: white;
+/* === RESULTADOS Y PASOS === */
+.result-section {
+  background: #222;
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-left: 5px solid var(--accent);
+  border-radius: 10px;
   margin-top: 20px;
-  text-align: left;
 }
 
-.resultado h2, .resultado h3 {
-  margin-top: 0;
+.mathjax {
+  font-size: 1.2rem;
 }
 
-.boton-pdf {
-  display: inline-block;
-  margin: 10px auto;
-  padding: 10px 20px;
+/* === GRAFICO === */
+#plot {
+  width: 100%;
+  overflow-x: auto;
+  background: #181818;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.05);
+}
+
+/* === BOTÓN PDF === */
+.btn-outline-success {
+  font-weight: bold;
+  border-radius: 10px;
+  transition: all var(--transition);
+}
+
+.btn-outline-success:hover {
   background-color: #28a745;
   color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  transition: background 0.3s ease;
 }
 
-.boton-pdf:hover {
-  background-color: #218838;
+/* === SPINNER === */
+.spinner-border {
+  display: block;
+  margin: 0 auto;
+  color: var(--accent);
 }
 
-#error {
-  color: red;
-  font-weight: bold;
+/* === RESPONSIVE === */
+@media (max-width: 600px) {
+  .calculator {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  input, select {
+    font-size: 0.95rem;
+  }
+
+  .btn-simbolo {
+    font-size: 1rem;
+    padding: 8px;
+  }
 }
