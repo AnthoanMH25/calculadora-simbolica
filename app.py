@@ -1,26 +1,38 @@
 from flask import Flask, render_template, request, send_file
 import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
 import plotly.graph_objs as go
 import plotly.utils
 import json
 from io import BytesIO
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
-import logging
+import re
 
 app = Flask(__name__)
 x = sp.Symbol('x')
-transformations = standard_transformations + (implicit_multiplication_application,)
 
-logging.basicConfig(level=logging.INFO)
 
-def parse_input_expression(expr_str):
-    try:
-        expr = parse_expr(expr_str, transformations=transformations)
-        return expr
-    except Exception as e:
-        raise ValueError("Expresión inválida. Verifica la sintaxis.") from e
+def corregir_multiplicacion_implicita(expr_str: str) -> str:
+    """
+    Corrige multiplicaciones implícitas para que sympy las entienda correctamente.
+    """
+    # 1. Número seguido de variable: 5x -> 5*x
+    expr_str = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', expr_str)
+    
+    # 2. Variable seguida de paréntesis: x(x+1) -> x*(x+1)
+    expr_str = re.sub(r'([a-zA-Z])(\()', r'\1*\2', expr_str)
+    
+    # 3. Paréntesis seguidos de variable: (x+1)x -> (x+1)*x
+    expr_str = re.sub(r'(\))([a-zA-Z])', r'\1*\2', expr_str)
+    
+    # 4. Número seguido de paréntesis: 3(x+1) -> 3*(x+1)
+    expr_str = re.sub(r'(\d)(\()', r'\1*\2', expr_str)
+    
+    # 5. Paréntesis seguidos de paréntesis: (x+1)(x-1) -> (x+1)*(x-1)
+    expr_str = re.sub(r'(\))(\()', r'\1*\2', expr_str)
+    
+    return expr_str
+
 
 def generar_pasos(expr, operacion, punto_limite=None):
     pasos = []
@@ -34,24 +46,29 @@ def generar_pasos(expr, operacion, punto_limite=None):
         pasos.append(f"\\[\\int f(x)\\,dx = \\int {sp.latex(expr)}\\,dx = {sp.latex(integral)} + C\\]")
         return integral, pasos
     elif operacion == "limite":
-        punto = sp.sympify(punto_limite or "0")
+        try:
+            punto = sp.sympify(punto_limite) if punto_limite else 0
+        except Exception:
+            punto = 0
         limite = sp.limit(expr, x, punto)
         pasos.append(f"\\[\\lim_{{x \\to {sp.latex(punto)}}} {sp.latex(expr)} = {sp.latex(limite)}\\]")
         return limite, pasos
-    raise ValueError("Operación no válida.")
+    return None, ["Operación no válida."]
+
 
 def generar_grafico(expr_original, expr_resultado=None, operacion=None):
     rango_x = [i / 2.0 for i in range(-20, 21)]
 
-    def evaluar(expr, val):
+    def eval_expr(expr, val):
         try:
             resultado = expr.subs(x, val)
-            return float(resultado) if resultado.is_real else None
-        except:
+            if resultado.is_real:
+                return float(resultado)
+        except Exception:
             return None
 
-    y_original = [evaluar(expr_original, val) for val in rango_x]
-    y_resultado = [evaluar(expr_resultado, val) for val in rango_x] if expr_resultado else None
+    y_original = [eval_expr(expr_original, val) for val in rango_x]
+    y_resultado = [eval_expr(expr_resultado, val) for val in rango_x] if expr_resultado else None
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=rango_x, y=y_original, mode='lines+markers', name='f(x)', line=dict(color='blue')))
@@ -65,18 +82,20 @@ def generar_grafico(expr_original, expr_resultado=None, operacion=None):
     )
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
-def generar_pdf(expr_original, expr_resultado=None, operacion=None):
+
+def guardar_pdf(expr_original, expr_resultado=None, operacion=None):
     rango_x = [i / 2.0 for i in range(-20, 21)]
 
-    def evaluar(expr, val):
+    def eval_expr(expr, val):
         try:
             resultado = expr.subs(x, val)
-            return float(resultado) if resultado.is_real else None
-        except:
+            if resultado.is_real:
+                return float(resultado)
+        except Exception:
             return None
 
-    y_original = [evaluar(expr_original, val) for val in rango_x]
-    y_resultado = [evaluar(expr_resultado, val) for val in rango_x] if expr_resultado else None
+    y_original = [eval_expr(expr_original, val) for val in rango_x]
+    y_resultado = [eval_expr(expr_resultado, val) for val in rango_x] if expr_resultado else None
 
     buffer = BytesIO()
     with PdfPages(buffer) as pdf:
@@ -94,6 +113,7 @@ def generar_pdf(expr_original, expr_resultado=None, operacion=None):
     buffer.seek(0)
     return buffer
 
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     resultado = ""
@@ -103,7 +123,6 @@ def index():
     expresion = ""
     operacion = "derivar"
     punto_limite = "0"
-    pdf_buffer = None
 
     if request.method == "POST":
         expresion = request.form.get("expresion", "").strip()
@@ -111,16 +130,19 @@ def index():
         punto_limite = request.form.get("punto_limite", "0").strip()
 
         try:
-            expr = parse_input_expression(expresion)
+            expresion_corregida = corregir_multiplicacion_implicita(expresion)
+            expr = sp.sympify(expresion_corregida)
             resultado_sym, pasos = generar_pasos(expr, operacion, punto_limite)
             resultado = sp.latex(resultado_sym)
+
             grafico = generar_grafico(expr, resultado_sym if operacion in ['derivar', 'integrar'] else None, operacion)
-            pdf_buffer = generar_pdf(expr, resultado_sym if operacion in ['derivar', 'integrar'] else None, operacion)
-            # Guarda temporalmente en memoria
-            request.environ['pdf_buffer'] = pdf_buffer
+
+            pdf_buffer = guardar_pdf(expr, resultado_sym if operacion in ['derivar', 'integrar'] else None, operacion)
+            with open("static/output.pdf", "wb") as f:
+                f.write(pdf_buffer.read())
+
         except Exception as e:
-            logging.exception("Error en procesamiento de entrada:")
-            error = f"{str(e)}"
+            error = f"Error al procesar la expresión: {str(e)}"
 
     return render_template(
         "index.html",
@@ -130,15 +152,14 @@ def index():
         error=error,
         expresion=expresion,
         operacion=operacion,
-        punto_limite=punto_limite
+        punto_limite=punto_limite,
     )
+
 
 @app.route("/descargar")
 def descargar():
-    buffer = request.environ.get('pdf_buffer')
-    if buffer:
-        return send_file(buffer, as_attachment=True, download_name="grafico.pdf", mimetype='application/pdf')
-    return "No hay gráfico disponible para descargar.", 404
+    return send_file("static/output.pdf", as_attachment=True, download_name="grafico.pdf", mimetype='application/pdf')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
