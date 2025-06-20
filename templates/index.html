@@ -1,68 +1,156 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Calculadora Científica Simbólica</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora Simbólica Avanzada</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Estilo personalizado -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+
+  <!-- MathJax para LaTeX -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Calculadora Científica Simbólica</h1>
-    <form method="POST">
-      <textarea id="expresion" name="expresion" placeholder="Ingresa la expresión aquí" required>{{ expresion }}</textarea>
-      
-      <div class="calculator">
-        {% for btn in ['7','8','9','/','sin(x)','cos(x)','tan(x)',
-                       '4','5','6','*','ln(x)','log(x)','sqrt(x)',
-                       '1','2','3','-','^','(',')',
-                       '0','.','+','x','e','pi'] %}
-          <button type="button" onclick="insert('{{ btn }}')">{{ btn }}</button>
-        {% endfor %}
-        <button type="button" onclick="borrar()">⌫</button>
-        <button type="button" onclick="limpiar()">C</button>
+  <header class="text-center py-4">
+    <h1 class="text-info">🧮 Calculadora Simbólica</h1>
+  </header>
+
+  <main class="container py-3" role="main">
+    <form method="POST" class="card p-4 shadow-lg bg-dark text-white" novalidate aria-label="Formulario de cálculo simbólico">
+      <div class="mb-3">
+        <label for="expresion" class="form-label fw-bold">Expresión matemática:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="expresion"
+          name="expresion"
+          value="{{ expresion | default('') }}"
+          placeholder="Ej: x^2 + 3x - 5"
+          required
+          autofocus
+          autocomplete="off"
+          spellcheck="false"
+          aria-describedby="expresionHelp"
+        />
+        <div id="expresionHelp" class="form-text text-light">Usa x como variable. Ej: sin(x), x^2, 3x+1</div>
       </div>
 
-      <select name="operacion" id="operacion" required onchange="mostrarCampoLimite(this.value)">
-        <option value="derivar">Derivar</option>
-        <option value="integrar">Integrar</option>
-        <option value="limite">Límite</option>
-      </select>
+      <div class="calculator mt-2 mb-4" aria-label="Botones de símbolos matemáticos">
+        <button type="button" class="btn-simbolo" data-simbolo="x">x</button>
+        <button type="button" class="btn-simbolo" data-simbolo="^2">^2</button>
+        <button type="button" class="btn-simbolo" data-simbolo="+">+</button>
+        <button type="button" class="btn-simbolo" data-simbolo="-">−</button>
+        <button type="button" class="btn-simbolo" data-simbolo="*">*</button>
+        <button type="button" class="btn-simbolo" data-simbolo="/">/</button>
+        <button type="button" class="btn-simbolo" data-simbolo="sqrt()">√</button>
+      </div>
 
-      <input type="text" name="punto_limite" id="campo-limite" placeholder="x → ?" style="display: none; margin-top: 10px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+      <div class="mb-3">
+        <label for="operacion" class="form-label fw-bold">Operación:</label>
+        <select
+          class="form-select"
+          id="operacion"
+          name="operacion"
+          required
+          onchange="toggleLimiteInput()"
+        >
+          <option value="derivar" {% if operacion == 'derivar' %}selected{% endif %}>Derivada</option>
+          <option value="integrar" {% if operacion == 'integrar' %}selected{% endif %}>Integral</option>
+          <option value="limite" {% if operacion == 'limite' %}selected{% endif %}>Límite</option>
+        </select>
+      </div>
 
-      <button type="submit">Calcular</button>
+      <div class="mb-3" id="limite-container" style="display: none;">
+        <label for="punto_limite" class="form-label fw-bold">Punto (solo para límite):</label>
+        <input
+          type="text"
+          class="form-control"
+          id="punto_limite"
+          name="punto_limite"
+          placeholder="Ej: 0"
+          value="{{ punto_limite | default('0') }}"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 fw-bold">
+        Calcular
+      </button>
+
+      <div class="spinner-border text-info mt-3 d-none" id="spinner" role="status" aria-hidden="true">
+        <span class="visually-hidden">Calculando...</span>
+      </div>
     </form>
 
     {% if error %}
-      <div class="resultado" style="border-left: 4px solid red;">
-        <h2 style="color: red;">Error:</h2>
-        <p>{{ error }}</p>
-      </div>
+    <div class="alert alert-danger mt-4" role="alert">
+      <strong>Error:</strong> {{ error }}
+    </div>
     {% endif %}
 
     {% if resultado %}
-      <div class="resultado">
-        <h2>Resultado:</h2>
-        <p>\\[{{ resultado }}\\]</p>
-
-        <h3>Pasos:</h3>
-        {% for paso in pasos %}
-          <p>\\[{{ paso }}\\]</p>
-        {% endfor %}
-
-        <a href="/descargar" class="boton-pdf">📄 Descargar PDF</a>
-
-        <div id="grafico"></div>
-        <script>
-          var datos = {{ grafico | safe }};
-          Plotly.newPlot('grafico', datos.data, datos.layout);
-        </script>
-      </div>
+    <section class="mt-5" aria-label="Resultado del cálculo">
+      <h3 class="text-info">Resultado:</h3>
+      <p class="mathjax fs-5">\\[{{ resultado }}\\]</p>
+    </section>
     {% endif %}
-  </div>
+
+    {% if pasos %}
+    <section class="mt-4" aria-label="Pasos de cálculo">
+      <h4 class="text-info">Pasos:</h4>
+      {% for paso in pasos %}
+      <p class="mathjax fs-6 mb-1">{{ paso | safe }}</p>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if grafico %}
+    <section class="mt-5" aria-label="Gráfica de la función">
+      <h4 class="text-info">Gráfica:</h4>
+      <div id="plot" class="border rounded shadow-sm p-3 overflow-auto"></div>
+      <a href="{{ url_for('descargar') }}" class="btn btn-outline-success mt-3" role="button" aria-label="Descargar gráfico en PDF">
+        📄 Descargar Gráfico (PDF)
+      </a>
+    </section>
+    {% endif %}
+  </main>
+
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <script>
+    function toggleLimiteInput() {
+      const operacion = document.getElementById('operacion').value;
+      const limiteContainer = document.getElementById('limite-container');
+      limiteContainer.style.display = operacion === 'limite' ? 'block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      toggleLimiteInput();
+
+      const spinner = document.getElementById('spinner');
+      const form = document.querySelector('form');
+      form.addEventListener('submit', () => {
+        spinner.classList.remove('d-none');
+      });
+
+      {% if grafico %}
+      const plotData = {{ grafico | safe }};
+      Plotly.newPlot('plot', plotData.data, plotData.layout, { responsive: true });
+      {% endif %}
+    });
+  </script>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
