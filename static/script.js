@@ -1,30 +1,62 @@
-function insert(val) {
-  const input = document.getElementById('expresion');
-  input.value += val;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const expresionInput = document.getElementById("expresion");
+  const operacionSelect = document.getElementById("operacion");
+  const puntoLimiteInput = document.getElementById("punto_limite");
+  const spinner = document.getElementById("spinner");
+  const form = document.querySelector("form");
 
-function borrar() {
-  const input = document.getElementById('expresion');
-  input.value = input.value.slice(0, -1);
-}
-
-function limpiar() {
-  document.getElementById('expresion').value = '';
-}
-
-// Mostrar campo del punto del límite solo si la operación es "limite"
-function mostrarCampoLimite(valor) {
-  const campo = document.getElementById('campo-limite');
-  if (valor === 'limite') {
-    campo.style.display = 'inline-block';
-  } else {
-    campo.style.display = 'none';
-    campo.value = ''; // Limpiar valor si no es necesario
+  /**
+   * Muestra u oculta el campo de punto según la operación.
+   */
+  function togglePuntoLimite() {
+    const mostrar = operacionSelect.value === "limite";
+    puntoLimiteInput.closest(".mb-3").style.display = mostrar ? "block" : "none";
   }
-}
 
-// Ejecutar al cargar (por si se regresa con POST)
-window.onload = function () {
-  const select = document.getElementById('operacion');
-  mostrarCampoLimite(select.value);
-};
+  /**
+   * Inserta símbolo o función matemática en el input actual.
+   * @param {string} simbolo - símbolo como "x", "+", "sqrt()"
+   */
+  function insertarSimbolo(simbolo) {
+    const cursorPos = expresionInput.selectionStart;
+    const isFuncion = simbolo.endsWith("()");
+    const textoInsertar = isFuncion
+      ? simbolo.slice(0, -2) + "()" // ej: sqrt()
+      : simbolo;
+
+    const antes = expresionInput.value.slice(0, cursorPos);
+    const despues = expresionInput.value.slice(expresionInput.selectionEnd);
+    expresionInput.value = antes + textoInsertar + despues;
+
+    expresionInput.focus();
+    const nuevaPos = isFuncion ? cursorPos + textoInsertar.length - 1 : cursorPos + textoInsertar.length;
+    expresionInput.setSelectionRange(nuevaPos, nuevaPos);
+  }
+
+  /**
+   * Activa los eventos de los botones de símbolos.
+   */
+  function inicializarBotonesSimbolo() {
+    document.querySelectorAll(".btn-simbolo").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const simbolo = btn.getAttribute("data-simbolo");
+        insertarSimbolo(simbolo);
+      });
+    });
+  }
+
+  /**
+   * Muestra el spinner al enviar el formulario.
+   */
+  function prepararFormulario() {
+    form.addEventListener("submit", () => {
+      spinner?.classList.remove("d-none");
+    });
+  }
+
+  // === INICIALIZACIÓN ===
+  togglePuntoLimite();
+  inicializarBotonesSimbolo();
+  prepararFormulario();
+  operacionSelect.addEventListener("change", togglePuntoLimite);
+});
