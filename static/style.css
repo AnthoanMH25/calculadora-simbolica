@@ -1,0 +1,92 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #eaf4fc;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+  text-align: center;
+}
+
+textarea {
+  width: 100%;
+  height: 60px;
+  font-size: 18px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  resize: none;
+}
+
+.calculator {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.calculator button {
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.calculator button:hover {
+  background: #0056b3;
+}
+
+select, button[type="submit"], input[type="text"] {
+  padding: 10px 20px;
+  font-size: 16px;
+  margin: 10px 5px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+input[type="text"] {
+  width: 200px;
+  font-size: 16px;
+}
+
+.resultado {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 20px;
+  text-align: left;
+}
+
+.resultado h2, .resultado h3 {
+  margin-top: 0;
+}
+
+.boton-pdf {
+  display: inline-block;
+  margin: 10px auto;
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.3s ease;
+}
+
+.boton-pdf:hover {
+  background-color: #218838;
+}
+
+#error {
+  color: red;
+  font-weight: bold;
+}
