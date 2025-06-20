@@ -2,3 +2,4 @@ flask>=2.0
 matplotlib>=3.0
 plotly>=5.0
 sympy>=1.8
+gunicorn
